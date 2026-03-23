@@ -8,11 +8,11 @@
 </div>
 
 ---
+Harvest extracts scripts and remotes from a game and saves them to your workspace in a windows compatible format.
 
-Harvest grabs all scripts and remotes within a game and write them to your workspace so you can read them more easily and bypass anytype of anti-dex.
+Note: Scripts will only decompile if a compatible decompiler is available. Performance may be affected in larger games depending on the quality of your decompiler. Improvements or optimizations are welcome.
 
-Scripts will not decompile if you do not have a decompiler, and if your executor’s decompiler is not good, it will cause lag in larger games. If you find a fix for this issue, please apply it.
-If you want something added, fixed, or anything else, feel free to DM me.
+If you have suggestions, feature requests, or fixes, feel free to reach out.
 
 ```luau
 loadstring(game:HttpGet("https://raw.githubusercontent.com/darlinglasting/Harvest/refs/heads/main/main.lua"))()

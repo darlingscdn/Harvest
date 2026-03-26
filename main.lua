@@ -22,6 +22,9 @@ Every file contains decompiled Lua from a game. It will not be perfect, but it s
 - `ClassName` – Script type (ModuleScript, LocalScript, etc.) for quick filtering.
 - `Service` – Top-level service (ReplicatedStorage, Players, etc.) to help you scope systems quickly.
 - `Children` – Count of direct descendants harvested under that script, signaling how deep its hierarchy runs.
+
+## Server
+- Do not worry about the server at all. Act as if we have zero information about it—we are just random exploiters using an executor.
 ]]
 
 local folders, checked, counts, names = {}, {}, {}, {}

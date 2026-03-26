@@ -223,51 +223,6 @@ local function remote(instance, path, fileName)
     )
 end
 
-local function log(basePath)
-    local logRoot = basePath .. "logged/"
-    ensure(logRoot)
-
-    local function dump(filename, fetcher)
-        local items = fetcher()
-        local lines = { "(unavailable)" }
-
-        if items and #items > 0 then
-            table.sort(items)
-            lines = items
-        end
-
-        writefile(logRoot .. filename, table.concat(lines, "\n"))
-    end
-
-    dump("loaded_modules.txt", function()
-        if typeof(getloadedmodules) ~= "function" then
-            return
-        end
-
-        local entries = {}
-        for _, module in ipairs(getloadedmodules()) do
-            if module then
-                table.insert(entries, module:GetFullName())
-            end
-        end
-        return entries
-    end)
-
-    dump("running_scripts.txt", function()
-        if typeof(getrunningscripts) ~= "function" then
-            return
-        end
-
-        local entries = {}
-        for _, script in ipairs(getrunningscripts()) do
-            if script then
-                table.insert(entries, script:GetFullName())
-            end
-        end
-        return entries
-    end)
-end
-
 local function walk(instance, path)
     if checked[instance] then
         return
@@ -322,7 +277,6 @@ local function run()
 
     makefolder(basePath)
     writefile(basePath .. "AGENTS.md", AGENTS_TEXT)
-    log(basePath)
 
     for _, serviceName in ipairs(SERVICE_SCAN_ORDER) do
         local service = game:GetService(serviceName)

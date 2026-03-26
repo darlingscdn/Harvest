@@ -1,30 +1,111 @@
-local SCRIPT_CLASSES = {LocalScript = true, Script = true, ModuleScript = true}
-local REMOTE_CLASSES = {RemoteEvent = true, RemoteFunction = true, BindableEvent = true, BindableFunction = true}
-local REMOTE_METHODS = {RemoteFunction = "InvokeServer", BindableEvent = "Fire", BindableFunction = "Invoke"}
-local SERVICE_SCAN_ORDER = {"ReplicatedFirst", "ReplicatedStorage", "Players", "StarterPlayer"}
-local README_TEXT =
-    [[# READ THIS FILE
+local SCRIPT_CLASSES =
+    { LocalScript = true, Script = true, ModuleScript = true }
+local REMOTE_CLASSES = {
+    RemoteEvent = true,
+    RemoteFunction = true,
+    BindableEvent = true,
+    BindableFunction = true,
+}
+local REMOTE_METHODS = {
+    RemoteFunction = "InvokeServer",
+    BindableEvent = "Fire",
+    BindableFunction = "Invoke",
+}
+local SERVICE_SCAN_ORDER =
+    { "ReplicatedFirst", "ReplicatedStorage", "Players", "StarterPlayer" }
+local AGENTS_TEXT = [[
+# README
 
-Read and understand the primary files inside these folders to map out the game’s structure.
+## Overview
+This repository contains extracted (decompiled) Lua scripts from a Roblox game. These files are read-only references intended to help analyze the game's structure and behavior.
 
-Each file includes metadata at the top describing its contents. That metadata lists the true Roblox path (e.g., `-- Path: game:GetService("ReplicatedStorage").path.to.file`) and, when applicable, provides a ready-to-use accessor line (`-- require(...)` for ModuleScripts, `-- getsenv(...)` for LocalScripts). When interacting with exports, follow those metadata instructions rather than the physical folder layout.
+Each file includes metadata at the top describing:
+- The original Roblox path
+- How to access it programmatically (e.g., require(...), getsenv(...))
+- Its ClassName, Service, and child hierarchy
 
-Every file contains decompiled Lua from a game. It will not be perfect, but it should provide enough insight into how the game functions. Do not edit these exports—they are read-only references meant to help you build external scripts.
+Decompiled code may be imperfect but should provide enough information for analysis.
 
-## Folder Overview
-- `ReplicatedFirst/` – Initialization scripts that run before the default loading finishes.
-- `ReplicatedStorage/` – Shared modules, remotes, and configuration objects accessible to both client and server.
-- `Players/` – Player-specific LocalScripts (e.g., inside `PlayerScripts`).
-- `StarterPlayer/` – Templates for character scripts (`StarterCharacterScripts`, `StarterPlayerScripts`) that replicate to each client.
+---
 
-## Metadata Legend
-- `require(...)` / `getsenv(...)` – Copy/paste-friendly lines showing how to reference the script in Roblox; if neither applies, the metadata falls back to the raw path.
-- `ClassName` – Script type (ModuleScript, LocalScript, etc.) for quick filtering.
-- `Service` – Top-level service (ReplicatedStorage, Players, etc.) to help you scope systems quickly.
-- `Children` – Count of direct descendants harvested under that script, signaling how deep its hierarchy runs.
+## Folder Structure
 
-## Server
-- Do not worry about the server at all. Act as if we have zero information about it—we are just random exploiters using an executor.
+ReplicatedFirst/
+Initialization scripts that run before the default loading process completes.
+
+ReplicatedStorage/
+Shared modules, remotes, and configuration objects accessible to both client and server.
+
+Players/
+Player-specific scripts, typically LocalScripts under PlayerScripts.
+
+StarterPlayer/
+Templates for scripts that replicate to each client, including StarterPlayerScripts and StarterCharacterScripts.
+
+---
+
+## Metadata
+
+Each script includes a header with:
+
+Path
+The full Roblox path using game:GetService(...). May include:
+- require(...) for ModuleScripts
+- getsenv(...) for LocalScripts
+
+Service
+The top-level service containing the script.
+
+ClassName
+The type of instance (ModuleScript, LocalScript, Script, etc.).
+
+Children
+The number of direct child instances.
+
+Always use the metadata for referencing scripts instead of relying on folder structure.
+
+---
+
+## Remotes
+
+Remote instances are exported with:
+- A full access path using WaitForChild
+- The correct invocation method:
+
+RemoteEvent -> FireServer  
+RemoteFunction -> InvokeServer  
+BindableEvent -> Fire  
+BindableFunction -> Invoke 
+
+---
+
+## Usage Notes
+
+These files are for analysis only and should not be modified.
+
+They can be used to:
+- Understand system structure
+- Identify remotes and modules
+- Dvelopment external scripts
+
+---
+
+## Server Assumptions
+
+No server-side information is available.
+
+Assume:
+- Only client-side visibility exists
+- Server validation is unknown
+- Behavior must be inferred from client code
+
+---
+
+## Limitations
+
+Decompiled code may be incomplete, obfuscated, or inaccurate.
+
+Despite this, it remains useful for understanding structure, flow, and potential interaction points.
 ]]
 
 local folders, checked, counts, names = {}, {}, {}, {}
@@ -78,18 +159,22 @@ local function script(instance, path, fileName, childCount)
         parts[index] = "." .. parts[index]
     end
 
-    local rootPath = 'game:GetService("' .. parts[1] .. '")' .. table.concat(parts, "", 2)
-    local accessor =
-        instance.ClassName == "ModuleScript" and "-- Path: require(" .. rootPath .. ")" or
-        (instance.ClassName == "LocalScript" and "-- Path: getsenv(" .. rootPath .. ")") or
-        "-- Path: " .. rootPath
+    local rootPath = 'game:GetService("'
+        .. parts[1]
+        .. '")'
+        .. table.concat(parts, "", 2)
+    local accessor = instance.ClassName == "ModuleScript"
+            and "-- Path: require(" .. rootPath .. ")"
+        or (instance.ClassName == "LocalScript" and "-- Path: getsenv(" .. rootPath .. ")")
+        or "-- Path: " .. rootPath
 
     local header = {
         accessor,
         "-- ",
         "-- Service: " .. parts[1],
-        (childCount and childCount > 0) and "-- Children: " .. childCount or nil,
-        "-- ClassName: " .. instance.ClassName
+        (childCount and childCount > 0) and "-- Children: " .. childCount
+            or nil,
+        "-- ClassName: " .. instance.ClassName,
     }
 
     local filtered = {}
@@ -100,7 +185,10 @@ local function script(instance, path, fileName, childCount)
     end
 
     ensure(path)
-    writefile(path .. fileName .. ".lua", table.concat(filtered, "\n") .. "\n\n" .. source)
+    writefile(
+        path .. fileName .. ".lua",
+        table.concat(filtered, "\n") .. "\n\n" .. source
+    )
 end
 
 local function remote(instance, path, fileName)
@@ -110,22 +198,28 @@ local function remote(instance, path, fileName)
     end
 
     local header = {
-        "-- " .. 'game:GetService("' .. parts[1] .. '")' .. table.concat(parts, "", 2),
+        "-- " .. 'game:GetService("' .. parts[1] .. '")' .. table.concat(
+            parts,
+            "",
+            2
+        ),
         "-- ",
         "-- ClassName: " .. instance.ClassName,
-        "-- Method: " .. (REMOTE_METHODS[instance.ClassName] or "FireServer")
+        "-- Method: " .. (REMOTE_METHODS[instance.ClassName] or "FireServer"),
     }
 
     ensure(path)
     writefile(
         path .. fileName .. ".remote",
-        table.concat(header, "\n") ..
-            "\n\n" ..
-                'game:GetService("' ..
-                    parts[1] ..
-                        '")' ..
-                            table.concat(parts, "", 2) ..
-                                ":" .. (REMOTE_METHODS[instance.ClassName] or "FireServer") .. "()"
+        table.concat(header, "\n")
+            .. "\n\n"
+            .. 'game:GetService("'
+            .. parts[1]
+            .. '")'
+            .. table.concat(parts, "", 2)
+            .. ":"
+            .. (REMOTE_METHODS[instance.ClassName] or "FireServer")
+            .. "()"
     )
 end
 
@@ -135,7 +229,7 @@ local function log(basePath)
 
     local function dump(filename, fetcher)
         local items = fetcher()
-        local lines = {"(unavailable)"}
+        local lines = { "(unavailable)" }
 
         if items and #items > 0 then
             table.sort(items)
@@ -145,39 +239,33 @@ local function log(basePath)
         writefile(logRoot .. filename, table.concat(lines, "\n"))
     end
 
-    dump(
-        "loaded_modules.txt",
-        function()
-            if typeof(getloadedmodules) ~= "function" then
-                return
-            end
-
-            local entries = {}
-            for _, module in ipairs(getloadedmodules()) do
-                if module then
-                    table.insert(entries, module:GetFullName())
-                end
-            end
-            return entries
+    dump("loaded_modules.txt", function()
+        if typeof(getloadedmodules) ~= "function" then
+            return
         end
-    )
 
-    dump(
-        "running_scripts.txt",
-        function()
-            if typeof(getrunningscripts) ~= "function" then
-                return
+        local entries = {}
+        for _, module in ipairs(getloadedmodules()) do
+            if module then
+                table.insert(entries, module:GetFullName())
             end
-
-            local entries = {}
-            for _, script in ipairs(getrunningscripts()) do
-                if script then
-                    table.insert(entries, script:GetFullName())
-                end
-            end
-            return entries
         end
-    )
+        return entries
+    end)
+
+    dump("running_scripts.txt", function()
+        if typeof(getrunningscripts) ~= "function" then
+            return
+        end
+
+        local entries = {}
+        for _, script in ipairs(getrunningscripts()) do
+            if script then
+                table.insert(entries, script:GetFullName())
+            end
+        end
+        return entries
+    end)
 end
 
 local function walk(instance, path)
@@ -221,15 +309,19 @@ end
 local function run()
     state()
 
-    local product = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
-    local basePath = product:gsub("[^%w%s%-]", ""):gsub("%s+", " "):gsub("%s+$", "") .. "@harvest/"
+    local product = game:GetService("MarketplaceService")
+        :GetProductInfo(game.PlaceId).Name
+    local basePath = product
+        :gsub("[^%w%s%-]", "")
+        :gsub("%s+", " ")
+        :gsub("%s+$", "") .. "@harvest/"
 
     if isfolder(basePath) then
         delfolder(basePath)
     end
 
     makefolder(basePath)
-    writefile(basePath .. "README.md", README_TEXT)
+    writefile(basePath .. "AGENTS.md", AGENTS_TEXT)
     log(basePath)
 
     for _, serviceName in ipairs(SERVICE_SCAN_ORDER) do
@@ -246,5 +338,8 @@ end
 
 local startTime = tick()
 run()
-print("harvest finished in " .. string.format("%.2f", tick() - startTime) .. " seconds")
- 
+print(
+    "harvest finished in "
+        .. string.format("%.2f", tick() - startTime)
+        .. " seconds"
+)

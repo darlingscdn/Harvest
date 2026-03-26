@@ -1,28 +1,28 @@
-local SCRIPT_CLASSES =
-    { LocalScript = true, Script = true, ModuleScript = true }
+local SCRIPT_CLASSES = {
+	LocalScript = true,
+	Script = true,
+	ModuleScript = true
+}
 local REMOTE_CLASSES = {
-    RemoteEvent = true,
-    RemoteFunction = true,
-    BindableEvent = true,
-    BindableFunction = true,
+	RemoteEvent = true,
+	RemoteFunction = true,
+	BindableEvent = true,
+	BindableFunction = true
 }
 local REMOTE_METHODS = {
-    RemoteFunction = "InvokeServer",
-    BindableEvent = "Fire",
-    BindableFunction = "Invoke",
+	RemoteFunction = "InvokeServer",
+	BindableEvent = "Fire",
+	BindableFunction = "Invoke"
 }
-local SERVICE_SCAN_ORDER =
-    { "ReplicatedFirst", "ReplicatedStorage", "Players", "StarterPlayer" }
-local AGENTS_TEXT = [[
-# README
-
+local SERVICES = {
+	"ReplicatedFirst",
+	"ReplicatedStorage",
+	"Players",
+	"StarterPlayer"
+}
+local AGENTS = [[
 ## Overview
-This repository contains extracted (decompiled) Lua scripts from a Roblox game. These files are read-only references intended to help analyze the game's structure and behavior.
-
-Each file includes metadata at the top describing:
-- The original Roblox path
-- How to access it programmatically (e.g., require(...), getsenv(...))
-- Its ClassName, Service, and child hierarchy
+This repo contains decompiled lua scripts.
 
 Decompiled code may be imperfect but should provide enough information for analysis.
 
@@ -46,21 +46,10 @@ Templates for scripts that replicate to each client, including StarterPlayerScri
 
 ## Metadata
 
-Each script includes a header with:
-
-Path
-The full Roblox path using game:GetService(...). May include:
-- require(...) for ModuleScripts
-- getsenv(...) for LocalScripts
-
-Service
-The top-level service containing the script.
-
-ClassName
-The type of instance (ModuleScript, LocalScript, Script, etc.).
-
-Children
-The number of direct child instances.
+Path: Full instance path.
+Service: Top-level service.
+ClassName: Instance type (ModuleScript, LocalScript, Script, etc.).
+Children: Number of direct children.
 
 Always use the metadata for referencing scripts instead of relying on folder structure.
 
@@ -68,29 +57,28 @@ Always use the metadata for referencing scripts instead of relying on folder str
 
 ## Remotes
 
-Remote instances are exported with:
-- A full access path using WaitForChild
-- The correct invocation method:
+Remote instances:
+- Full access path using `WaitForChild`
+- Correct invocation method:
 
-RemoteEvent -> FireServer  
-RemoteFunction -> InvokeServer  
-BindableEvent -> Fire  
-BindableFunction -> Invoke 
+RemoteEvent -> FireServer
+RemoteFunction -> InvokeServer
+BindableEvent -> Fire
+BindableFunction -> Invoke
 
 ---
 
-## Usage Notes
+## Notes
 
 These files are for analysis only and should not be modified.
 
 They can be used to:
-- Understand system structure
-- Identify remotes and modules
-- Dvelopment external scripts
+- Understand game structure
+- Develop external scripts
 
 ---
 
-## Server Assumptions
+## Server
 
 No server-side information is available.
 
@@ -98,202 +86,169 @@ Assume:
 - Only client-side visibility exists
 - Server validation is unknown
 - Behavior must be inferred from client code
-
----
-
-## Limitations
-
-Decompiled code may be incomplete, obfuscated, or inaccurate.
-
-Despite this, it remains useful for understanding structure, flow, and potential interaction points.
 ]]
 
 local folders, checked, counts, names = {}, {}, {}, {}
 
-local function state()
-    folders, checked, counts, names = {}, {}, {}, {}
+local function check(dir)
+	if not folders[dir] then
+		makefolder(dir);
+		folders[dir] = true
+	end
 end
 
-local function ensure(path)
-    if not folders[path] then
-        makefolder(path)
-        folders[path] = true
-    end
+local function empty(dir)
+	if not isfolder(dir) then
+		return
+	end
+	local ok, files = pcall(listfiles, dir)
+	if ok and # files == 0 then
+		pcall(delfolder, dir);
+		folders[dir] = nil
+	end
 end
 
-local function record(path, instance)
-    local cached = names[instance]
-    if cached then
-        return cached
-    end
-
-    local scope = counts[path]
-    if not scope then
-        scope = {}
-        counts[path] = scope
-    end
-
-    local name = instance.Name:gsub('[<>:"/\\|%?%*]', "_")
-    scope[name] = (scope[name] or 0) + 1
-    if scope[name] > 1 then
-        name = name .. scope[name]
-    end
-
-    names[instance] = name
-    return name
+local function clean(name)
+	name = tostring(name or ""):gsub('[<>:"/\\|%?%*]', "_"):gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", ""):gsub("%.+$", "")
+	return name ~= "" and name or "unnamed"
 end
 
-local function script(instance, path, fileName, childCount)
-    local source = instance.Source
-
-    if (not source or source == "") and decompile then
-        source = decompile(instance)
-    end
-
-    if not source or source == "" then
-        return
-    end
-
-    local parts = instance:GetFullName():split(".")
-    for index = 2, #parts do
-        parts[index] = "." .. parts[index]
-    end
-
-    local rootPath = 'game:GetService("'
-        .. parts[1]
-        .. '")'
-        .. table.concat(parts, "", 2)
-    local accessor = instance.ClassName == "ModuleScript"
-            and "-- Path: require(" .. rootPath .. ")"
-        or (instance.ClassName == "LocalScript" and "-- Path: getsenv(" .. rootPath .. ")")
-        or "-- Path: " .. rootPath
-
-    local header = {
-        accessor,
-        "-- ",
-        "-- Service: " .. parts[1],
-        (childCount and childCount > 0) and "-- Children: " .. childCount
-            or nil,
-        "-- ClassName: " .. instance.ClassName,
-    }
-
-    local filtered = {}
-    for _, line in ipairs(header) do
-        if line then
-            table.insert(filtered, line)
-        end
-    end
-
-    ensure(path)
-    writefile(
-        path .. fileName .. ".lua",
-        table.concat(filtered, "\n") .. "\n\n" .. source
-    )
+local function path(instance, wfc)
+	local parts = instance:GetFullName():split(".")
+	local out = {
+		'game:GetService("' .. parts[1] .. '")'
+	}
+	for i = 2, # parts do
+		out[i] = wfc and ':WaitForChild("' .. parts[i] .. '")' or '.' .. parts[i]
+	end
+	return out
 end
 
-local function remote(instance, path, fileName)
-    local parts = instance:GetFullName():split(".")
-    for index = 2, #parts do
-        parts[index] = ':WaitForChild("' .. parts[index] .. '")'
-    end
-
-    local header = {
-        "-- " .. 'game:GetService("' .. parts[1] .. '")' .. table.concat(
-            parts,
-            "",
-            2
-        ),
-        "-- ",
-        "-- ClassName: " .. instance.ClassName,
-        "-- Method: " .. (REMOTE_METHODS[instance.ClassName] or "FireServer"),
-    }
-
-    ensure(path)
-    writefile(
-        path .. fileName .. ".remote",
-        table.concat(header, "\n")
-            .. "\n\n"
-            .. 'game:GetService("'
-            .. parts[1]
-            .. '")'
-            .. table.concat(parts, "", 2)
-            .. ":"
-            .. (REMOTE_METHODS[instance.ClassName] or "FireServer")
-            .. "()"
-    )
+local function getsource(instance)
+	local function normalize(s)
+		if not s then
+			return nil
+		end
+		s = s:gsub("\r\n", "\n"):gsub("\r", "\n")
+		local t = s:match("^%s*(.-)%s*$")
+		return (t == "" or t == "-- Empty bytecode") and nil or s
+	end
+	local s = instance.Source
+	if (not s or s == "") and decompile then
+		s = decompile(instance)
+	end
+	return normalize(s)
 end
 
-local function walk(instance, path)
-    if checked[instance] then
-        return
-    end
-
-    checked[instance] = true
-    local fileName = record(path, instance)
-    local children = instance:GetChildren()
-
-    if SCRIPT_CLASSES[instance.ClassName] then
-        script(instance, path, fileName, #children)
-        if #children > 0 then
-            local childPath = path .. fileName .. " children/"
-            ensure(childPath)
-            for _, child in ipairs(children) do
-                walk(child, childPath)
-            end
-        end
-        return
-    end
-
-    if REMOTE_CLASSES[instance.ClassName] then
-        remote(instance, path, fileName)
-        if #children > 0 then
-            local childPath = path .. fileName .. " children/"
-            ensure(childPath)
-            for _, child in ipairs(children) do
-                walk(child, childPath)
-            end
-        end
-        return
-    end
-
-    for _, child in ipairs(children) do
-        walk(child, path)
-    end
+local function uniquebase(product)
+	local stem = product:gsub("[^%w%s%-]", ""):gsub("%s+", " "):gsub("%s+$", "")
+	stem = (stem == "" and "game" or stem:sub(1, 72)) .. "@harvest"
+	local path = stem .. "/"
+	if not isfolder(path) then
+		return path
+	end
+	local t, n = os.time(), 1
+	repeat
+		path = stem .. "_" .. t .. (n > 1 and "_" .. n or "") .. "/";
+		n = n + 1
+	until not isfolder(path)
+	return path
 end
 
-local function run()
-    state()
-
-    local product = game:GetService("MarketplaceService")
-        :GetProductInfo(game.PlaceId).Name
-    local basePath = product
-        :gsub("[^%w%s%-]", "")
-        :gsub("%s+", " ")
-        :gsub("%s+$", "") .. "@harvest/"
-
-    if isfolder(basePath) then
-        delfolder(basePath)
-    end
-
-    makefolder(basePath)
-    writefile(basePath .. "AGENTS.md", AGENTS_TEXT)
-
-    for _, serviceName in ipairs(SERVICE_SCAN_ORDER) do
-        local service = game:GetService(serviceName)
-        if service then
-            local root = basePath .. serviceName .. "/"
-            ensure(root)
-            for _, child in ipairs(service:GetChildren()) do
-                walk(child, root)
-            end
-        end
-    end
+local function record(dir, instance)
+	if names[instance] then
+		return names[instance]
+	end
+	counts[dir] = counts[dir] or {}
+	local name = clean(instance.Name)
+	counts[dir][name] = (counts[dir][name] or 0) + 1
+	if counts[dir][name] > 1 then
+		name = name .. counts[dir][name]
+	end
+	names[instance] = name
+	return name
 end
 
-local startTime = tick()
-run()
-print(
-    "harvest finished in "
-        .. string.format("%.2f", tick() - startTime)
-        .. " seconds"
-)
+local function script(instance, dir, name, nchildren)
+	local source = getsource(instance)
+	if not source then
+		return
+	end
+	local parts = path(instance)
+	local root = table.concat(parts)
+	local cls = instance.ClassName
+	local prefix = cls == "ModuleScript" and "require" or cls == "LocalScript" and "getsenv" or nil
+	local lines = {
+		"-- Path: " .. (prefix and prefix .. "(" .. root .. ")" or root),
+		"--",
+		"-- Service: " .. parts[1]
+	}
+	if nchildren > 0 then
+		lines[# lines + 1] = "-- Children: " .. nchildren
+	end
+	lines[# lines + 1] = "-- ClassName: " .. cls
+	check(dir)
+	writefile(dir .. name .. ".lua", table.concat(lines, "\n") .. "\n\n" .. source)
+end
+
+local function remote(instance, dir, name)
+	local parts = path(instance, true)
+	local root = parts[1] .. table.concat(parts, "", 2)
+	local method = REMOTE_METHODS[instance.ClassName] or "FireServer"
+	check(dir)
+	writefile(dir .. name .. ".remote", ("-- %s\n--\n-- ClassName: %s\n-- Method: %s\n\n%s:%s()"):format(root, instance.ClassName, method, root, method))
+end
+
+local function walk(instance, dir)
+	if checked[instance] then
+		return
+	end
+	checked[instance] = true
+	local name = record(dir, instance)
+	local children = instance:GetChildren()
+	local cls = instance.ClassName
+	if SCRIPT_CLASSES[cls] then
+		script(instance, dir, name, # children)
+	elseif REMOTE_CLASSES[cls] then
+		remote(instance, dir, name)
+	else
+		for _, child in ipairs(children) do
+			walk(child, dir)
+		end
+		return
+	end
+	if # children > 0 then
+		local sub = dir .. name .. " children/"
+		check(sub)
+		for _, child in ipairs(children) do
+			walk(child, sub)
+		end
+		empty(sub)
+	end
+end
+
+local happy, sad = xpcall(function()
+	folders, checked, counts, names = {}, {}, {}, {}
+	local t0 = tick()
+	local product = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+	local base = uniquebase(product)
+	makefolder(base)
+	writefile(base .. "AGENTS.md", AGENTS)
+	for _, svc in ipairs(SERVICES) do
+		local service = game:GetService(svc)
+		if not service then
+			continue
+		end
+		local root = base .. svc .. "/"
+		check(root)
+		for _, child in ipairs(service:GetChildren()) do
+			walk(child, root)
+		end
+		empty(root)
+	end
+	print(("[harvest] %.2fs"):format(tick() - t0))
+end, debug.traceback)
+
+if not happy then
+	warn("[harvest] \n" .. tostring(sad))
+end

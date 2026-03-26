@@ -140,6 +140,7 @@ local function getsource(instance)
 	return normalize(s)
 end
 
+-- rah 
 local function uniquebase(product)
 	local stem = product:gsub("[^%w%s%-]", ""):gsub("%s+", " "):gsub("%s+$", "")
 	stem = (stem == "" and "game" or stem:sub(1, 72)) .. "@harvest"

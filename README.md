@@ -3,7 +3,6 @@
 # **Harvest**
 
 ![Luau](https://img.shields.io/badge/luau-Roblox-blue?logo=roblox&logoColor=white)
-![Platform](https://img.shields.io/badge/platform-Roblox-informational?logo=roblox&logoColor=white)
 
 </div>
 

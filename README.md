@@ -4,7 +4,7 @@
 
 Harvest extracts scripts and remotes from a game and saves them to your workspace in a Windows compatible format.
 
-> **Note:** Scripts will only decompile if a compatible decompiler is available. Performance may be affected in larger games depending on the quality of your decompiler. Improvements or optimizations are welcome.
+> **Note:** Scripts will only decompile if a decompiler is available. Performance may be affected in larger games depending on the quality of your decompiler.
 
 If you have suggestions, feature requests, or fixes, feel free to reach out.
 

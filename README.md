@@ -2,10 +2,6 @@
 
 # **Harvest**
 
-![Luau](https://img.shields.io/badge/luau-Roblox-blue?logo=roblox&logoColor=white)
-
-</div>
-
 ---
 Harvest extracts scripts and remotes from a game and saves them to your workspace in a windows compatible format.
 

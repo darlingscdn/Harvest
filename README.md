@@ -30,6 +30,6 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/darlinglasting/Harves
 
 <div align="center">
 
-[![Discord](https://img.shields.io/badge/Discord-Message%20Me-5865F2?logo=discord&logoColor=white)](https://discord.com/users/1482138538928635955)  [![Telegram](https://img.shields.io/badge/Telegram-Message%20Me-26A5E4?logo=telegram&logoColor=white)](https://t.me/darlingsgettingedred)
+[![Discord](https://img.shields.io/badge/Discord-Message%20Me-5865F2?logo=discord&logoColor=white)](https://discord.com/users/1482172794828619896)  [![Telegram](https://img.shields.io/badge/Telegram-Message%20Me-26A5E4?logo=telegram&logoColor=white)](https://t.me/darlingsgettingedred)
 
 </div>
